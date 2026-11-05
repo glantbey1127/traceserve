@@ -36,24 +36,22 @@ flowchart TD
     Events --> Observe["指标 / JSONL trace / SSE"]
 ~~~
 
-HTTP 请求通过 AsyncEngine 的专用线程调用同步引擎；Python 批量生成、结构化流与 HTTP 服务复用同一套调度和事件实现。
-
 ~~~text
 traceserve/
 ├── nanovllm/
-│   ├── engine/           # Sequence、Scheduler、BlockManager、ModelRunner、LLMEngine
-│   ├── layers/           # Attention、RMSNorm、张量并行层、Sampler
-│   ├── models/qwen3.py   # 上游 Qwen3 Dense 实现
-│   ├── utils/loader.py   # checkpoint 加载
-│   ├── graph.py          # Graph 桶和补齐回退策略
-│   └── observability.py  # 请求事件、延迟指标与 trace
-├── traceserve/           # AsyncEngine、HTTP、CLI、benchmark、报告分析
-├── tests/               # CPU / ASGI / HTTP 测试及可选 GPU 冒烟测试
-├── examples/            # Python、异步与 HTTP 客户端示例
-├── docs/                # 架构、接口、指标和 GitHub 发布指南
-├── .github/workflows/   # Python 3.11 / 3.12 CPU CI
-├── UPSTREAM.md          # 上游来源与改造边界
-└── LICENSE              # 保留原 MIT 许可证
+│   ├── engine/           
+│   ├── layers/          
+│   ├── models/qwen3.py   
+│   ├── utils/loader.py   
+│   ├── graph.py          
+│   └── observability.py  
+├── traceserve/          
+├── tests/               
+├── examples/            
+├── docs/               
+├── .github/workflows/   
+├── UPSTREAM.md          
+└── LICENSE              
 ~~~
 
 ## 环境与安装
@@ -202,12 +200,6 @@ traceserve compare artifacts/baseline.json artifacts/run.json --output artifacts
 python -m pytest -q -m "not gpu"
 python -m ruff check .
 python -m compileall -q nanovllm traceserve tests examples
-~~~
-
-可选真实 GPU 冒烟测试：
-
-~~~bash
-TRACESERVE_TEST_MODEL=/models/Qwen3-0.6B python -m pytest -q -m gpu
 ~~~
 
 
