@@ -1,0 +1,13 @@
+# CPU/API verification environment. GPU dependencies are intentionally separate.
+# Install with: python -m pip install -r requirements-dev.txt -e .
+numpy==2.3.5
+xxhash==3.6.0
+pytest==8.4.2
+fastapi==0.115.12
+pydantic==2.13.5
+uvicorn==0.34.3
+httpx==0.28.1
+ruff==0.11.13
+tqdm==4.67.1
+build==1.2.2.post1
+setuptools==80.9.0

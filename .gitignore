@@ -1,0 +1,31 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+artifacts/
+*.jsonl
+
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+
+# Local model weights and checkpoints
+models/
+checkpoints/
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Editor and coverage files
+.idea/
+.vscode/
+.coverage
+coverage.xml
+htmlcov/
