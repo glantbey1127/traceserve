@@ -36,6 +36,14 @@ git status --short
 
 show-toplevel 应指向 E:/codex/traceserve，避免把 E:\codex 下的其他项目一起提交。
 
+如果 Git 提示 detected dubious ownership，通常是项目由其他 Windows 账户（例如 Codex 沙箱账户）创建。确认这是本项目后，在你自己的 PowerShell 中将这个准确目录加入当前账户的 Git 信任列表：
+
+~~~powershell
+git config --global --add safe.directory "E:/codex/traceserve"
+~~~
+
+然后重试原命令。此配置需要由运行 git push 的 Windows 账户执行。
+
 此项目已初始化 Git。只有复制到另一个完全没有 .git 的目录时，才需要运行：
 
 ~~~powershell
@@ -195,6 +203,7 @@ git push
 
 | 提示 | 处理方法 |
 | --- | --- |
+| detected dubious ownership | 在自己的 PowerShell 中执行 git config --global --add safe.directory "E:/codex/traceserve"，然后重试推送 |
 | src refspec main does not match any | 先检查是否有 commit，再检查分支名；完成首次提交后使用 git branch -M main |
 | remote origin already exists | 查看 git remote -v，地址错误时使用 git remote set-url origin |
 | Repository not found | 确认 traceserve 已在正确账号下创建、URL 拼写正确，登录账号有权限 |
