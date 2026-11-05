@@ -10,7 +10,6 @@ TraceServe 基于 [nano-vLLM](https://github.com/GeeeekExplorer/nano-vllm) 的�
 
 项目围绕三个工程问题展开：新请求的 Prefill 如何给 Decode 留出 KV 余量；Decode batch 怎样选择合适的 Graph 桶；发生排队、抢占与重算时，怎样用请求和 step 指标解释执行过程。
 
-**验证状态：**本地已通过 90 项 CPU / API 测试，2 项真实 GPU 测试因缺少 CUDA 模型而跳过。GPU 推理、显存预算和多卡 TP 尚未经过硬件验证；当前不包含性能提升或模型质量实验结论。具体环境和检查见 [PROJECT_STATUS.md](PROJECT_STATUS.md)。上方 CI 徽章展示 GitHub 实际运行状态，与本地测试记录分别统计。
 
 ## 从原项目改了什么
 
@@ -22,8 +21,6 @@ TraceServe 基于 [nano-vLLM](https://github.com/GeeeekExplorer/nano-vllm) 的�
 | 可观测性 | 总耗时与吞吐打印 | 请求 TTFT / ITL / TPOT、排队耗时、重算量、前缀命中量、抢占与 Graph 补齐追踪 |
 | 服务与工具 | Python 示例与简单 benchmark | HTTP / SSE、健康与指标接口、CLI、可重复构造负载的 benchmark、trace 分析与报告对比 |
 | 兼容性修复 | 主要面向半精度推理 | 增加 temperature=0 贪心采样，修复 FP32 RMSNorm 输入别名修改问题 |
-
-**Decode 预留是接纳策略，不是容量保证。** 多条长请求仍可能用完 KV；此时继续通过抢占与 Prefill 重算恢复。公平策略按调度步数轮换，不等价于客户端延迟 SLO。
 
 ## 执行链与目录
 
@@ -68,7 +65,7 @@ git clone https://github.com/glantbey1127/traceserve.git
 cd traceserve
 ~~~
 
-真实推理使用 **Linux + NVIDIA CUDA GPU**。建议先用 Qwen3-0.6B / 1.7B Dense、单卡开始；24 GB 只是可选硬件条件，实际能否装下取决于模型、dtype、上下文、batch 和系统已占用显存。
+真实推理使用 **Linux + NVIDIA CUDA GPU**。
 
 支持 Python 3.11–3.12。建立虚拟环境后，先按照 [PyTorch 官方版本安装说明](https://pytorch.org/get-started/previous-versions/) 安装与本机 CUDA 匹配、且满足 torch>=2.4,<2.9 的版本。
 
@@ -87,10 +84,6 @@ python -m pip install "flash-attn>=2.7,<3" --no-build-isolation
 python -m pip install -e ".[gpu,http]"
 ~~~
 
-CUDA 检查应返回 True；FlashAttention、PyTorch 和 CUDA 的具体组合仍需在目标 GPU 上验证。
-
-模型必须预先放在本地目录，包含 Hugging Face 配置、tokenizer 和 safetensors 权重。本项目不自动下载模型，不执行远程模型代码。支持的是上游实现的 **Qwen3 Dense 架构**，不支持任意 HF 模型、Qwen3 MoE、量化权重或多模态模型。
-
 Windows / 无 GPU 环境可以先验证控制层和接口。在安装了 Python 3.11 或 3.12 的 PowerShell 中运行：
 
 ~~~powershell
@@ -107,8 +100,6 @@ source .venv/bin/activate
 python -m pip install -r requirements-dev.txt -e .
 python -m pytest -q -m "not gpu"
 ~~~
-
-这里的测试 runner 只存在于 tests/，用于验证调度和接口逻辑，不是模型推理后端，也不能用于性能结论。
 
 ## Python：批量与流式生成
 
@@ -144,10 +135,6 @@ with LLM(
         stream.close()
 ~~~
 
-一条 token 事件对应一个采样 token，delta 可能为空，例如特殊 token 或尚未完整解码的 UTF-8 字节。最终 FinishEvent 也可能带有需要输出的 delta。完整处理示例见 [examples/generate.py](examples/generate.py)。
-
-LLM 为单调用者同步引擎；不要从多个线程直接调用它。并发请求请通过 AsyncEngine 或 HTTP 服务发送。同步和异步 API 详见 [docs/api.md](docs/api.md)。
-
 ## 命令行
 
 ~~~bash
@@ -160,7 +147,6 @@ traceserve serve --model /models/Qwen3-0.6B \
   --trace artifacts/server.jsonl
 ~~~
 
-服务默认只监听 127.0.0.1:8000。使用一个 worker，GPU 操作由该 worker 内的专用线程串行拥有；不能通过增加 uvicorn worker 来共享同一个引擎。服务用于本地开发，未实现鉴权、跨机器调度或多租户隔离。
 
 ~~~bash
 curl http://127.0.0.1:8000/v1/chat/completions \
@@ -210,12 +196,6 @@ traceserve analyze artifacts/run.jsonl --tpot-budget-ms 100 --output artifacts/a
 traceserve compare artifacts/baseline.json artifacts/run.json --output artifacts/comparison.json
 ~~~
 
-benchmark 使用实际执行完成的输出计数，不用目标长度代替实际长度；记录负载指纹、后端、配置、冷/热前缀缓存条件，并将启动与预热排除在计时外。输入 token 是指定随机种子的合成性能负载，不用于模型质量评测。
-
-analyze 只根据 trace 中的观测数据汇总，不把 Graph 补齐或抢占现象自动判断成性能瓶颈。compare 提供描述性对比，对负载或后端差异给出提示，不自动作因果判断。
-
-指标定义、分母、缓存条件和使用限制详见 [docs/metrics.md](docs/metrics.md)。不需要 GPU 即可运行 analyze / compare。
-
 ## 测试与代码入口
 
 ~~~bash
@@ -230,9 +210,6 @@ python -m compileall -q nanovllm traceserve tests examples
 TRACESERVE_TEST_MODEL=/models/Qwen3-0.6B python -m pytest -q -m gpu
 ~~~
 
-GPU 测试包含 eager / CUDA Graph 贪心输出一致性、流式取消回收，以及 FP32 RMSNorm 输入不被修改的检查。默认跳过这些用例；设置真实模型路径后才执行硬件检查。
-
-GitHub Actions 在 Python 3.11 / 3.12 上运行 CPU 测试、静态检查、编译和构建，不运行 GPU 实验。
 
 - [架构与源码阅读路线](docs/architecture.md)
 - [接口说明](docs/api.md)
@@ -241,6 +218,3 @@ GitHub Actions 在 Python 3.11 / 3.12 上运行 CPU 测试、静态检查、编�
 - [当前验证状态](PROJECT_STATUS.md)
 - [GitHub 首次上传与后续更新完整流程](docs/github-publish.md)
 
-## 来源与许可证
-
-基于 GeeeekExplorer/nano-vllm 固定提交 bb823b3e06983d71485a8e1f23715ebd87d98ef8，保留原作者 Xingkai Yu 的 MIT 许可。原始计算算子、模型实现、权重加载与基础 KV 管理均明确归属上游；本项目是有注明来源的工程改造。详情见 [UPSTREAM.md](UPSTREAM.md) 和 [LICENSE](LICENSE)。
