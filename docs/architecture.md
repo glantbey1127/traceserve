@@ -65,23 +65,3 @@ computed_high_watermark 记录该请求历史上实际计算到的最大逻辑�
 
 已完成请求和 step 历史有容量上限；累计计数不受历史淘汰影响。详细逐 token 时间保留到请求结束；长输出会有相应 CPU 内存开销。
 
-## 推荐精读顺序
-
-1. config.py、sampling_params.py：配置边界、容量和采样约束。
-2. engine/sequence.py：请求状态、KV 对应逻辑位置、序列化。
-3. engine/block_manager.py：哈希链、缓存引用、free / used 状态。
-4. engine/scheduler.py：接纳、分块 Prefill、公平轮换、抢占、取消。
-5. engine/model_runner.py：峰值预热、KV 预算、张量准备、图捕获与 replay。
-6. models/qwen3.py：Decoder、注意力、MLP 和最终残差。
-7. layers/attention.py、linear.py、embed_head.py：KV 读写和张量并行。
-8. utils/loader.py：checkpoint 权重合并和各 rank 的加载。
-9. graph.py、observability.py、engine/llm_engine.py：策略、时间口径和流式生命周期。
-10. traceserve/async_engine.py、server.py：异步服务如何保持引擎单一所有者。
-11. benchmark.py、analysis.py：负载、计时、归因边界。
-12. tests/：将代码行为写成可执行检查。
-
-## 适用范围
-
-保留上游单机 TP 通信实现，真实多卡路径未经本工作环境验证。默认使用固定本地进程组地址和共享内存命名，同一机器同时启动多个 TP 引擎实例不在支持范围内。不要在一个进程内同时构造多个真实 GPU 引擎。
-
-没有实现训练、跨机器通信、KV CPU offload、量化、投机解码、LoRA 热切换、多模态编码器、MoE 或任意 checkpoint 架构适配。项目所有公开的新接口均有实际实现；这些未包含的能力没有以空函数形式占位。
