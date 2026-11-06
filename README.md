@@ -47,10 +47,8 @@ traceserve/
 │   └── observability.py  
 ├── traceserve/          
 ├── tests/               
-├── examples/            
-├── docs/               
-├── .github/workflows/   
-├── UPSTREAM.md          
+├── examples/                     
+├── .github/workflows/       
 └── LICENSE              
 ~~~
 
